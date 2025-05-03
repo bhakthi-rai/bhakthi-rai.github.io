@@ -1,2 +1,29 @@
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6429359388134075"
      crossorigin="anonymous"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wiki Travel Guide</title>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <h2>Wikipedia Travel Guide</h2>
+
+    <!-- Search Input -->
+    <input type="text" id="searchBox" placeholder="Enter a place">
+    <button onclick="getWikipediaSummary(document.getElementById('searchBox').value)">Get Summary</button>
+    <button id="playButton">Play Summary</button>
+    <button onclick="stopAudio()">Stop Summary</button>
+    <button onclick="getNearbyWikiPlaces(document.getElementById('searchBox').value)">Find Nearby Places</button>
+
+    <!-- Summary Display -->
+    <p id="summary"></p>
+    <!-- Nearby Places -->
+    <p>
+    <img id="placeImage" src="" alt="Place Image">
+    </p>
+    <ul id="places"></ul>
+</body>
+</html>

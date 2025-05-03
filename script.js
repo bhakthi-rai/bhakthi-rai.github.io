@@ -1,37 +1,31 @@
-plet currentPage = 1;
+let currentPage = 1;
 let speechSynthesisObject;
 
-function handleEnter(event) {
-    if (event.key === "Enter") {
-        getPlaceInfo();
-    }
-}
-
-function getPlaceInfo() {
-    let place = document.getElementById("searchBox").value.trim();
-    if (place) {
-        fetch(`/get_info?place=${place}&page=${currentPage}`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById("summary").textContent = data.summary;
-            document.getElementById("placeImage").src = data.image;
-            let escapedText = escapeText(data.summary);
-            document.getElementById("playButton").addEventListener("click", function() {
-                speakText(data.summary);
-            }, { once: true }); // Ensures only one listener is attached
-
+function getWikipediaSummary(place) {
+    let url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(place)}`;
+    fetch(url)
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById("summary").textContent = data.extract || "No information available.";
+        if (data.thumbnail) {
+            document.getElementById("placeImage").src = data.thumbnail.source; // Set image src
+        } else {
+            document.getElementById("placeImage").src = "no-image.jpg"; // Fallback image
+        }
+        let escapedText = escapeText(document.getElementById("summary").textContent );
+        document.getElementById("playButton").addEventListener("click", function() {
+        let text = document.getElementById("summary").textContent;  // Get summary
+        let escapedText = JSON.stringify(text);  // Ensure proper encoding
+        speakText(text);  // Pass raw text instead of escapedText
         });
-    }
+        document.getElementById("places").textContent="";
+    })
+    .catch(error => console.error("Error fetching Wikipedia summary:", error));
 }
 
 function paginate() {
     currentPage++;
     getPlaceInfo();
-}
-
-function playAudio() {
-    let audio = new Audio(window.audioFile);
-    audio.play();
 }
 
 function speakText(text) {
@@ -62,23 +56,48 @@ function autoFillLocation() {
     });
 }
 
-function getNearbyPlaces() {
-    let place = document.getElementById("searchBox").value.trim();
-    if (place) {
-        fetch(`/get_nearby_places?place=${place}`)
+function getPlaceCoordinates(placeTitle, callback) {
+    let url = `https://en.wikipedia.org/w/api.php?action=query&prop=coordinates&titles=${encodeURIComponent(placeTitle)}&format=json&origin=*`;
+
+    fetch(url)
+    .then(response => response.json())
+    .then(data => {
+        let pages = data.query.pages;
+        for (let key in pages) {
+            if (pages[key].coordinates) {
+                let lat = pages[key].coordinates[0].lat;
+                let lon = pages[key].coordinates[0].lon;
+                console.log(`${placeTitle} - Latitude: ${lat}, Longitude: ${lon}`);
+                callback(lat, lon); // Pass coordinates to callback
+                return;
+            }
+        }
+        callback(null, null); // No coordinates found
+    })
+    .catch(error => console.error("Error fetching coordinates:", error));
+}
+
+function getNearbyWikiPlaces(placeTitle, radius = 5000) {
+    getPlaceCoordinates(placeTitle, function(lat, lon) {
+        if (!lat || !lon) {
+            console.error("No coordinates found, cannot fetch nearby places.");
+            return;
+        }
+        let url = `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gsradius=${radius}&gscoord=${lat}|${lon}&format=json&origin=*`;
+        fetch(url)
         .then(response => response.json())
         .then(data => {
-            let list = document.getElementById("placesList");
-            list.innerHTML = "";  // Clear previous results
-            data.places.forEach(p => {
+            let placesList = document.getElementById("places");
+            placesList.innerHTML = ""; // Clear previous results
+            data.query.geosearch.forEach(place => {
                 let item = document.createElement("li");
-                item.textContent = p.name;
-                item.onclick = () => {
-                    document.getElementById("searchBox").value = p.name;
-                    getPlaceInfo();
-                };
-                list.appendChild(item);
+                item.textContent = `${place.title} - Distance: ${place.dist} meters`;
+                item.onclick = () => getPlaceCoordinates(place.title, function(lat, lon) {
+                    alert(`${place.title} - Latitude: ${lat}, Longitude: ${lon}`);
+                }); // Fetch lat/lon on click
+                placesList.appendChild(item);
             });
-        });
-    }
+        })
+        .catch(error => console.error("Error fetching nearby places:", error));
+    });
 }

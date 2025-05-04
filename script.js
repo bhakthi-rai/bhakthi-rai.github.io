@@ -77,7 +77,7 @@ function getPlaceCoordinates(placeTitle, callback) {
     .catch(error => console.error("Error fetching coordinates:", error));
 }
 
-function getNearbyWikiPlaces(placeTitle, radius = 5000) {
+function getNearbySearchTextPlaces(placeTitle, radius = 5000) {
     getPlaceCoordinates(placeTitle, function(lat, lon) {
         if (!lat || !lon) {
             console.error("No coordinates found, cannot fetch nearby places.");
@@ -93,11 +93,40 @@ function getNearbyWikiPlaces(placeTitle, radius = 5000) {
                 let item = document.createElement("li");
                 item.textContent = `${place.title} - Distance: ${place.dist} meters`;
                 item.onclick = () => getPlaceCoordinates(place.title, function(lat, lon) {
-                    alert(`${place.title} - Latitude: ${lat}, Longitude: ${lon}`);
                 }); // Fetch lat/lon on click
                 placesList.appendChild(item);
             });
         })
         .catch(error => console.error("Error fetching nearby places:", error));
     });
+}
+
+function getNearbyMePlaces(placeTitle, radius = 5000) {
+    navigator.geolocation.getCurrentPosition(
+    function(position) {
+        let lat = position.coords.latitude;
+        let lon = position.coords.longitude;
+        getNearbyWikiPlaces(lat, lon); // Pass coordinates to fetch places
+    }
+);
+
+
+
+function getNearbyWikiPlaces(lat, lon, radius = 5000) {
+    let url = `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gsradius=${radius}&gscoord=${lat}|${lon}&format=json&origin=*`;
+
+    fetch(url)
+    .then(response => response.json())
+    .then(data => {
+        let placesList = document.getElementById("places");
+        placesList.innerHTML = ""; // Clear previous results
+
+        data.query.geosearch.forEach(place => {
+            let item = document.createElement("li");
+            item.textContent = `${place.title} - Distance: ${place.dist}m`;
+            placesList.appendChild(item);
+        });
+    })
+    .catch(error => console.error("Error fetching nearby places:", error));
+}
 }

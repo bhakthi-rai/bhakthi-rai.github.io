@@ -2,11 +2,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <style>
+        @media (max-width: 768px) {
+    body {
+        font-size: 16px;
+        padding: 10px;
+    }
+
+    .container {
+        width: 100%;
+        padding: 10px;
+    }
+
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+}
+        .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+button {
+   background-color: DodgerBlue;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 12px;
+  margin: 4px 2px;
+  font-weight: bold;
+  cursor: pointer;
+  font-family:"Comic";
+}
+ h2 {
+ color: DodgerBlue;
+ font-family:"Comic";
+
+ }
+ input {
+ color: DodgerBlue;
+ font-family:"Comic";
+ padding: 15px 15px;
+ }
+}
+
+    </style>
      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6429359388134075"
      crossorigin="anonymous"></script>
     <meta charset="UTF-8">
      <meta name="google-site-verification" content="3SSu5FnBWTjoFo1_cAbqWHEdbNz_3jhdgiAj4VghdeI" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title> Travel Guide</title>
     <script src="script.js" defer></script>
 </head>
@@ -14,7 +64,7 @@
 <div class="wrapper">
     <div class="main-content">
 
-    <h2> Travel Guide</h2>
+    <h2>Travel Guide</h2>
     <!-- Search Input -->
     <input type="text" id="searchBox" placeholder="Enter a place">
     <button onclick="getWikipediaSummary(document.getElementById('searchBox').value)">Search</button>
@@ -24,18 +74,14 @@
         <button onclick="getNearbyMePlaces(document.getElementById('searchBox').value)">Places Near Me</button>
 
 </div>
-    <!-- Summary Display -->
-    <p id="summary"></p>
-    <!-- Nearby Places -->
-    <p>
-    <img id="placeImage" src="">
-    </p>
-    <ul id="places"></ul>
 
 
+<table border="1">
 
-
-
+    <tbody id="places-list">
+    <img src="Earth.jpg">
+    </tbody>
+</table>
 
 
 <footer>

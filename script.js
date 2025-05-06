@@ -1,24 +1,86 @@
 let currentPage = 1;
 let speechSynthesisObject;
 
-function getWikipediaSummary(place) {
-    let url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(place)}`;
+function addHeader(){
+ let row = `<tr>
+            <td>Title</td>
+            <td>Image</td>
+            <td>Summary</td>
+            <td>Distance</td>
+        </tr>`;
+         document.getElementById("places-list").innerHTML += row;
+}
+function fetchWikiImage(title, distance,summary) {
+    let imageUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages|extracts&titles=${encodeURIComponent(title)}&format=json&pithumbsize=100&exintro=true&explaintext=true&origin=*`;
+    fetch(imageUrl)
+    .then(response => response.json())
+    .then(data => {
+        let pages = data.query.pages;
+        let imageSrc = "No image available"; // Default text
+        let summaryText = "No summary available"; // Default summary message
+        for (let pageId in pages) {
+            if (pages[pageId].thumbnail) {
+                imageSrc = `<img src="${pages[pageId].thumbnail.source}" alt="${title}">`;
+            }
+            if (pages[pageId].extract) {
+                summaryText = pages[pageId].extract; // Store summary
+            }
+        }
+
+
+        let row = `<tr>
+            <td>${title}</td>
+            <td>${imageSrc}</td>
+            <td>${summaryText}</td>
+            <td>${distance} meters</td>
+        </tr>`;
+        document.getElementById("places-list").innerHTML += row;
+    })
+    .catch(error => console.error("Error fetching image:", error));
+}
+function getNearbyPlaces(lat, lon) {
+    let url = `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=9000&format=json&origin=*`;
+
     fetch(url)
     .then(response => response.json())
     .then(data => {
-        document.getElementById("summary").textContent = data.extract || "No information available.";
-        if (data.thumbnail) {
-            document.getElementById("placeImage").src = data.thumbnail.source; // Set image src
-        } else {
-            document.getElementById("placeImage").src = "no-image.jpg"; // Fallback image
-        }
-        let escapedText = escapeText(document.getElementById("summary").textContent );
-        document.getElementById("playButton").addEventListener("click", function() {
-        let text = document.getElementById("summary").textContent;  // Get summary
-        let escapedText = JSON.stringify(text);  // Ensure proper encoding
-        speakText(text);  // Pass raw text instead of escapedText
+        let tableBody = document.getElementById("places-list");
+        tableBody.innerHTML = "";
+        addHeader()
+        data.query.geosearch.forEach(place => {
+            fetchWikiImage(place.title, place.dist);
         });
-        document.getElementById("places").textContent="";
+    })
+    .catch(error => console.error("Error fetching nearby places:", error));
+}
+
+
+function getWikipediaSummary(place) {
+    let url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(place)}`;
+    document.getElementById("places-list").textContent="";
+    fetch(url)
+    .then(response => response.json())
+    .then(data => {
+        let imageSrc = "No image available"; // Default text
+        let summaryText = "No summary available"; // Default summary message
+
+         if (data.thumbnail) {
+                imageSrc = `<img src="${data.thumbnail.source}" alt="${place}">`;
+            }
+            if (data.extract) {
+                summaryText = data.extract; // Store summary
+            }
+        addHeader()
+        let row = `<tr>
+            <td>${place}</td>
+            <td>${imageSrc}</td>
+            <td>${summaryText}  </td>
+            <td></td>
+        </tr>`;
+         document.getElementById("places-list").innerHTML += row;
+        document.getElementById("playButton").addEventListener("click", function() {
+        speakText(summaryText);  // Pass raw text instead of escapedText
+        });
     })
     .catch(error => console.error("Error fetching Wikipedia summary:", error));
 }
@@ -83,21 +145,8 @@ function getNearbySearchTextPlaces(placeTitle, radius = 5000) {
             console.error("No coordinates found, cannot fetch nearby places.");
             return;
         }
-        let url = `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gsradius=${radius}&gscoord=${lat}|${lon}&format=json&origin=*`;
-        fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            let placesList = document.getElementById("places");
-            placesList.innerHTML = ""; // Clear previous results
-            data.query.geosearch.forEach(place => {
-                let item = document.createElement("li");
-                item.textContent = `${place.title} - Distance: ${place.dist} meters`;
-                item.onclick = () => getPlaceCoordinates(place.title, function(lat, lon) {
-                }); // Fetch lat/lon on click
-                placesList.appendChild(item);
-            });
-        })
-        .catch(error => console.error("Error fetching nearby places:", error));
+    getNearbyPlaces(lat, lon)
+
     });
 }
 
@@ -106,27 +155,8 @@ function getNearbyMePlaces(placeTitle, radius = 5000) {
     function(position) {
         let lat = position.coords.latitude;
         let lon = position.coords.longitude;
-        getNearbyWikiPlaces(lat, lon); // Pass coordinates to fetch places
+        getNearbyPlaces(lat, lon); // Pass coordinates to fetch places
     }
 );
 
-
-
-function getNearbyWikiPlaces(lat, lon, radius = 5000) {
-    let url = `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gsradius=${radius}&gscoord=${lat}|${lon}&format=json&origin=*`;
-
-    fetch(url)
-    .then(response => response.json())
-    .then(data => {
-        let placesList = document.getElementById("places");
-        placesList.innerHTML = ""; // Clear previous results
-
-        data.query.geosearch.forEach(place => {
-            let item = document.createElement("li");
-            item.textContent = `${place.title} - Distance: ${place.dist}m`;
-            placesList.appendChild(item);
-        });
-    })
-    .catch(error => console.error("Error fetching nearby places:", error));
-}
 }
